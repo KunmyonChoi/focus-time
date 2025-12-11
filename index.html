@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A premium Focus Timer application to boost your productivity.">
+    <title>Focus Timer</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Icons (Phosphor Icons for a clean, premium look) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
+</head>
+
+<body data-theme="charcoal">
+    <div id="rest-3d-scene"></div>
+    <div class="background-container"></div>
+    <main class="timer-card">
+        <header class="card-header">
+            <div class="quote-container">
+                <i class="ph ph-quotes"></i>
+                <span id="quote-display">Stay Focused.</span>
+            </div>
+            <div class="header-controls">
+                <button class="icon-btn" id="pip-btn" aria-label="Compact Mode" title="Always on Top (Compact)">
+                    <i class="ph ph-picture-in-picture"></i>
+                </button>
+                <button class="icon-btn" id="fs-btn" aria-label="Toggle Fullscreen">
+                    <i class="ph ph-corners-out"></i>
+                </button>
+                <button class="icon-btn" id="settings-btn" aria-label="Settings">
+                    <i class="ph ph-gear"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="timer-display">
+            <h1 id="time-display">25:00</h1>
+        </div>
+
+        <div class="controls">
+            <button class="icon-btn large" id="reset-btn" aria-label="Reset Timer" title="Reset">
+                <i class="ph ph-arrow-counter-clockwise"></i>
+            </button>
+            <button class="icon-btn large primary-play-btn" id="start-pause-btn" aria-label="Start Timer"
+                title="Start/Pause">
+                <i class="ph ph-play" id="start-pause-icon"></i>
+            </button>
+            <button class="icon-btn large" id="skip-btn" aria-label="Skip to Rest" title="Rest Now">
+                <i class="ph ph-coffee"></i>
+            </button>
+        </div>
+
+        <div class="status-indicator" id="status-indicator"></div>
+
+    </main>
+
+    <!-- Settings Modal -->
+    <dialog id="settings-modal" class="settings-modal">
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2>Timer Settings</h2>
+                <button id="close-modal-btn" class="close-btn" aria-label="Close settings">
+                    <i class="ph ph-x"></i>
+                </button>
+            </header>
+
+            <form id="settings-form">
+                <div class="form-group">
+                    <label>Focus Duration</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="focus-duration" value="25" checked>
+                            <span>25 min</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="focus-duration" value="50">
+                            <span>50 min</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="focus-duration" value="custom">
+                            <span>Custom</span>
+                        </label>
+                    </div>
+                    <!-- Custom input hidden by default, shown via CSS/JS if needed, or just simplified for now -->
+                    <div id="custom-duration-wrapper" class="hidden">
+                        <input type="number" id="custom-minutes" name="custom-minutes" min="1" max="180"
+                            placeholder="Min" value="25">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Timer Sound</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="timer-sound" value="beep" checked>
+                            <span>Beep</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="timer-sound" value="alarm">
+                            <span>Alarm</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="timer-sound" value="chime">
+                            <span>Chime</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="timer-sound" value="mute">
+                            <span>Mute</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Theme</label>
+                    <div class="theme-options">
+                        <label class="theme-option" title="Scenic">
+                            <input type="radio" name="app-theme" value="scenic">
+                            <span class="swatch image-swatch"
+                                style="--swatch-image: url('https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=200&auto=format&fit=crop');"></span>
+                        </label>
+                        <label class="theme-option" title="Charcoal">
+                            <input type="radio" name="app-theme" value="charcoal" checked>
+                            <span class="swatch" style="--swatch-color: #1e1e1e;"></span>
+                        </label>
+                        <label class="theme-option" title="Midnight">
+                            <input type="radio" name="app-theme" value="midnight">
+                            <span class="swatch" style="--swatch-color: #0f172a;"></span>
+                        </label>
+                        <label class="theme-option" title="Sunrise">
+                            <input type="radio" name="app-theme" value="sunrise">
+                            <span class="swatch" style="--swatch-color: #f59e0b;"></span>
+                        </label>
+                        <label class="theme-option" title="Forest">
+                            <input type="radio" name="app-theme" value="forest">
+                            <span class="swatch" style="--swatch-color: #064e3b;"></span>
+                        </label>
+                        <label class="theme-option" title="Berry">
+                            <input type="radio" name="app-theme" value="berry">
+                            <span class="swatch" style="--swatch-color: #701a75;"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="save-btn">Save Settings</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- Compact Mode Placeholder -->
+    <div id="pip-placeholder" class="pip-placeholder hidden">
+        <div class="placeholder-content">
+            <i class="ph ph-picture-in-picture"></i>
+            <h2>Compact Mode Active</h2>
+            <p>The timer is running in a separate window.</p>
+            <button id="restore-btn" class="control-btn">Restore Timer</button>
+        </div>
+    </div>
+
+    <footer class="app-footer">
+        <p>Focus Timer</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

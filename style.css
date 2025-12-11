@@ -1,0 +1,633 @@
+:root {
+    --bg-color: #f7f7f7;
+    --card-bg: #ffffff;
+    --text-primary: #1a1a1a;
+    --text-secondary: #666666;
+    --accent-color: #000000;
+    --shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-premium: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+    --timer-font: 'Inter', sans-serif;
+    --handwriting-font: 'Caveat', cursive;
+    --font-weight-light: 200;
+    --font-weight-regular: 400;
+    --font-weight-bold: 600;
+}
+
+/* Default Theme (Charcoal) - Auto Dark Mode Support logic */
+/* But 'data-theme' will override */
+:root,
+[data-theme="charcoal"] {
+    --bg-color: #0f0f0f;
+    --card-bg: rgba(30, 30, 30, 0.65);
+    /* Transparent for glass */
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --accent-color: #ffffff;
+    --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="midnight"] {
+    --bg-color: #020617;
+    --card-bg: rgba(15, 23, 42, 0.65);
+    /* Slate 900 transparent */
+    --text-primary: #f8fafc;
+    --text-secondary: rgba(148, 163, 184, 0.8);
+    --accent-color: #38bdf8;
+    --glass-border: rgba(56, 189, 248, 0.2);
+}
+
+[data-theme="sunrise"] {
+    --bg-color: #451a03;
+    --card-bg: rgba(120, 53, 15, 0.65);
+    /* Amber 900 transparent */
+    --text-primary: #fffbeb;
+    --text-secondary: rgba(252, 211, 77, 0.8);
+    --accent-color: #fbbf24;
+    --glass-border: rgba(251, 191, 36, 0.2);
+}
+
+[data-theme="forest"] {
+    --bg-color: #022c22;
+    --card-bg: rgba(6, 78, 59, 0.65);
+    /* Emerald 900 transparent */
+    --text-primary: #ecfdf5;
+    --text-secondary: rgba(110, 231, 183, 0.8);
+    --accent-color: #34d399;
+    --glass-border: rgba(52, 211, 153, 0.2);
+}
+
+[data-theme="berry"] {
+    --bg-color: #4a044e;
+    --card-bg: rgba(112, 26, 117, 0.65);
+    /* Fuchsia 900 transparent */
+    --text-primary: #fae8ff;
+    --text-secondary: rgba(232, 121, 249, 0.8);
+    --accent-color: #d946ef;
+    --glass-border: rgba(217, 70, 239, 0.2);
+}
+
+[data-theme="scenic"] {
+    /* Similar to charcoal/default but optimized for random backgrounds */
+    --bg-color: #0f0f0f;
+    --card-bg: rgba(30, 30, 30, 0.5);
+    /* More transparent */
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.8);
+    --accent-color: #ffffff;
+    --glass-border: rgba(255, 255, 255, 0.2);
+}
+
+/* Remove media query for colors since we control via theme now */
+/* Keeping structure in case we want a 'system' default later, but for now defaults are dark */
+@media (prefers-color-scheme: dark) {
+    /* Already covered by defaults above */
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-color);
+    /* High resolution landscape */
+    background-image: url('https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2560&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+
+    color: var(--text-primary);
+    font-family: var(--timer-font);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    transition: background-color 0.4s ease, color 0.4s ease;
+    overflow: hidden;
+    /* Prevent scrollbars in fullscreen mainly */
+}
+
+/* Fullscreen pseudo-class adjustments */
+body:fullscreen {
+    background-color: var(--bg-color);
+    /* Ensure bg persists */
+}
+
+.timer-card {
+    background-color: var(--card-bg);
+    /* Glassmorphism Effect */
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+
+    border-radius: 24px;
+    padding: 3rem;
+    width: 90%;
+    max-width: 600px;
+    /* Slight increase */
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    /* Glass shadow */
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+    .timer-card {
+        border: 1px solid var(--glass-border);
+    }
+}
+
+/* Header */
+.card-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    color: var(--text-secondary);
+}
+
+.quote-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--handwriting-font);
+    font-size: 1.4rem;
+    /* Slightly smaller to fit long quotes */
+    color: var(--text-primary);
+    max-width: 70%;
+    line-height: 1.2;
+}
+
+.header-controls {
+    display: flex;
+    gap: 1rem;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--text-secondary);
+    transition: color 0.2s;
+    font-size: 1.8rem;
+    padding: 0.5rem;
+    border-radius: 50%;
+}
+
+.icon-btn:hover {
+    color: var(--text-primary);
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+@media (prefers-color-scheme: dark) {
+    .icon-btn:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+}
+
+/* Timer */
+.timer-display {
+    margin: 2rem 0 4rem 0;
+    text-align: center;
+    width: 100%;
+}
+
+#time-display {
+    font-size: 18vw;
+    /* Responsive huge font */
+    font-size: clamp(6rem, 20vw, 12rem);
+    font-weight: var(--font-weight-light);
+    letter-spacing: -0.05em;
+    font-variant-numeric: tabular-nums;
+    line-height: 0.9;
+    color: var(--text-primary);
+}
+
+/* Controls */
+.timer-controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+/* Make the play button slightly larger/prominent */
+.primary-play-btn {
+    width: 5rem;
+    height: 5rem;
+    font-size: 2.5rem;
+    background-color: var(--text-primary);
+    color: var(--text-secondary);
+    /* Inverse for contrast if solid */
+    /* Or keeping glass style but slightly different? */
+    /* Let's keep glass style but bigger scale */
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+}
+
+.primary-play-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px) scale(1.05);
+}
+
+.control-btn {
+    background: transparent;
+    border: 1px solid var(--text-primary);
+    border-radius: 999px;
+    padding: 1rem 3rem;
+    font-family: var(--timer-font);
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.control-btn:hover {
+    background-color: var(--text-primary);
+    color: var(--card-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.control-btn:active {
+    transform: translateY(0);
+}
+
+/* Footer & Status */
+.app-footer {
+    position: absolute;
+    bottom: -4rem;
+    font-family: var(--handwriting-font);
+    font-size: 1.5rem;
+    width: 100%;
+    text-align: center;
+    opacity: 0.6;
+}
+
+.status-indicator {
+    font-family: var(--timer-font);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    height: 1.2rem;
+    margin-top: 1.5rem;
+}
+
+/* Modal */
+.settings-modal {
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    padding: 0;
+    margin: auto;
+    width: 90%;
+    max-width: 350px;
+    box-shadow: var(--shadow-premium);
+    color: var(--text-primary);
+}
+
+.settings-modal::backdrop {
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    /* Uses alpha now */
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 1.5rem;
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    /* Slight border to match card */
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-header h2 {
+    font-family: var(--handwriting-font);
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.8rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: var(--timer-font);
+}
+
+.radio-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.radio-option {
+    flex: 1;
+    position: relative;
+    cursor: pointer;
+}
+
+.radio-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.radio-option span {
+    display: block;
+    text-align: center;
+    padding: 0.5rem;
+    border: 1px solid var(--text-primary);
+    border-radius: 4px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.radio-option input[type="radio"]:checked+span {
+    background-color: var(--text-primary);
+    color: var(--card-bg);
+}
+
+#custom-duration-wrapper {
+    margin-top: 1rem;
+}
+
+.custom-duration.hidden {
+    display: none;
+}
+
+/* Theme Swatches */
+.theme-options {
+    display: flex;
+    gap: 1rem;
+    padding: 0.5rem 0;
+}
+
+.theme-option {
+    cursor: pointer;
+    position: relative;
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+/* Rest 3D Scene */
+#rest-3d-scene {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    /* Above background (0), below timer card (10) */
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1s ease;
+}
+
+#rest-3d-scene.active {
+    opacity: 1;
+}
+
+.timer-card {
+    position: relative;
+    z-index: 10;
+}
+
+.theme-option input {
+    opacity: 0;
+    position: absolute;
+    width: 0;
+    height: 0;
+}
+
+.theme-option .swatch {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: var(--swatch-color);
+    border-radius: 50%;
+    border: 2px solid transparent;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.theme-option .swatch.image-swatch {
+    background-image: var(--swatch-image);
+    background-size: cover;
+    background-position: center;
+    background-color: #333;
+}
+
+.theme-option input:checked+.swatch {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 4px var(--text-primary);
+}
+
+.theme-option:hover .swatch {
+    transform: scale(1.1);
+}
+
+/* Background Toggle Logic */
+body.no-background {
+    background-image: none !important;
+    background-color: var(--bg-color);
+}
+
+/* Old checkbox styles removed */
+
+#custom-minutes {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--text-primary);
+    border-radius: 4px;
+    font-family: var(--timer-font);
+    font-size: 1rem;
+    background: transparent;
+    color: var(--text-primary);
+}
+
+.save-btn {
+    width: 100%;
+    background-color: var(--text-primary);
+    color: var(--card-bg);
+    border: none;
+    padding: 0.8rem;
+    border-radius: 4px;
+    font-family: var(--timer-font);
+    /* Clean font for action button */
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: opacity 0.2s;
+}
+
+.save-btn:hover {
+    opacity: 0.9;
+}
+
+/* Compact Mode (PiP) Styles */
+body.compact-mode {
+    background-color: var(--bg-color);
+    /* Fallback */
+    /* PiP doesn't support background-image well in all cases, or might look busy. 
+       Let's use a solid dark color derived from the theme but opaque.
+       Or just use the image if we can? 
+       Actually, `documentPictureInPicture` window usually supports everything.
+       Let's try to keep it consistent. */
+    background-image: url('https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2560&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+body.compact-mode .timer-card {
+    box-shadow: none;
+    border: none;
+    padding: 1rem;
+    width: 100%;
+    height: 100%;
+    /* Fill window */
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.4);
+    /* Darker overlay for readability in small window */
+    backdrop-filter: none;
+    /* Reduce load in PiP? or keep it? Keep it simple. */
+}
+
+body.compact-mode .card-header,
+body.compact-mode .app-footer,
+body.compact-mode .status-indicator {
+    display: none;
+    /* Hide extras */
+}
+
+body.compact-mode .timer-display {
+    margin: 0;
+}
+
+body.compact-mode #time-display {
+    font-size: 25vw;
+    /* Even larger relative to window */
+}
+
+body.compact-mode .timer-controls {
+    margin-top: 1rem;
+    gap: 1rem;
+    margin-bottom: 0;
+}
+
+body.compact-mode .control-btn {
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+}
+
+/* PiP Placeholder */
+.pip-placeholder {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+}
+
+.pip-placeholder.hidden {
+    display: none;
+}
+
+.placeholder-content {
+    background-color: var(--card-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    padding: 3rem;
+    border-radius: 24px;
+    box-shadow: var(--shadow-premium);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100%;
+    justify-content: center;
+}
+
+.secondary-controls {
+    display: flex;
+    gap: 1.5rem;
+}
+
+
+
+.placeholder-content i {
+    font-size: 4rem;
+    color: var(--text-primary);
+    opacity: 0.5;
+}
+
+.placeholder-content h2 {
+    font-family: var(--handwriting-font);
+    font-size: 2rem;
+    color: var(--text-primary);
+}
+
+.placeholder-content p {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
