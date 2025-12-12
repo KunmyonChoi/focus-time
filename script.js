@@ -16,6 +16,7 @@ class FocusTimer {
         this.pipCanvas = document.getElementById('pip-canvas');
         this.pipCtx = this.pipCanvas ? this.pipCanvas.getContext('2d') : null;
         this.pipActive = false;
+        this.pipBgImage = new Image(); // For canvas rendering
         this.isAutoPipEnabled = false; // Toggle for auto feature
 
         // Auto-start settings
@@ -409,26 +410,84 @@ class FocusTimer {
         const ctx = this.pipCtx;
         const w = this.pipCanvas.width;
         const h = this.pipCanvas.height;
+        const centerX = w / 2;
+        const centerY = h / 2;
 
-        // Background
-        ctx.fillStyle = this.mode === 'FOCUS' ? '#1e1e1e' : '#0f172a'; // Simple fallback colors
-        // If custom theme colors wanted, logic gets complex, keep simple for now
-        ctx.fillRect(0, 0, w, h);
+        // 1. Background
+        if (this.theme === 'scenic' && this.pipBgImage.src) {
+            // "Object-fit: cover" logic for canvas
+            const img = this.pipBgImage;
+            if (img.complete && img.naturalWidth > 0) {
+                const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+                const x = (w / 2) - (img.naturalWidth / 2) * scale;
+                const y = (h / 2) - (img.naturalHeight / 2) * scale;
+                ctx.drawImage(img, x, y, img.naturalWidth * scale, img.naturalHeight * scale);
 
-        // Text
+                // Overlay for readability
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(0, 0, w, h);
+            } else {
+                ctx.fillStyle = '#1e1e1e'; // Fallback
+                ctx.fillRect(0, 0, w, h);
+            }
+        } else {
+            ctx.fillStyle = this.mode === 'FOCUS' ? '#1e1e1e' : '#0f172a';
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        // 2. Progress Ring
+        const currentTotal = this.timers[this.mode];
+        const progress = 1 - (this.timeLeft / currentTotal); // 0 to 1
+        const radius = 180;
+        const strokeWidth = 15;
+
+        // Track background
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = strokeWidth;
+        ctx.stroke();
+
+        // Progress arc
+        ctx.beginPath();
+        // Start from top (-90deg)
+        const startAngle = -0.5 * Math.PI;
+        const endAngle = startAngle + (2 * Math.PI * (1 - progress)); // Count down visual
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.strokeStyle = this.mode === 'FOCUS' ? '#a5b4fc' : '#818cf8'; // Soft focus colors
+        if (this.theme === 'ember') ctx.strokeStyle = '#f87171'; // Reddish for ember
+        if (this.theme === 'midnight') ctx.strokeStyle = '#818cf8'; // Blueish
+        ctx.lineWidth = strokeWidth;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        // 3. Text & Typography
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
+        // Shadow for readability
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+
         // Time
-        ctx.font = 'bold 120px Inter, sans-serif';
+        ctx.font = 'bold 100px Inter, sans-serif';
         const timeLeftStr = this.timeDisplay.textContent;
-        ctx.fillText(timeLeftStr, w / 2, h / 2);
+        ctx.fillText(timeLeftStr, centerX, centerY - 10);
 
         // Status
-        ctx.font = '30px Inter, sans-serif';
+        ctx.font = '500 24px Inter, sans-serif';
+        this.pipCtx.letterSpacing = '2px'; // Canvas support varies, but usually fine
         const status = this.mode === 'FOCUS' ? 'FOCUS TIME' : 'REST TIME';
-        ctx.fillText(status, w / 2, h / 2 + 80);
+        ctx.fillText(status.toUpperCase(), centerX, centerY + 80);
+
+        // Reset shadow
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
     }
 
     updateMediaSession() {
@@ -487,9 +546,10 @@ class FocusTimer {
         // Simple assignment for now.
         const urlStr = `url('${imageUrl}')`;
         document.body.style.backgroundImage = urlStr;
-        if (this.pipWindow) {
-            this.pipWindow.document.body.style.backgroundImage = urlStr;
-        }
+
+        // Preload for PIP Canvas
+        this.pipBgImage.src = imageUrl;
+        this.pipBgImage.crossOrigin = "Anonymous"; // Important for canvas export if needed (though we stream locally)
     }
 
     startTimer() {
