@@ -2,6 +2,8 @@
 
 A premium, aesthetic Focus Timer application designed to boost productivity with a calm, immersive experience.
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/f6b80e84-673b-4b99-aee3-52b439fa9d69/deploy-status)](https://app.netlify.com/projects/cosmic-lokum-2310eb/deploys)
+
 ## ✨ Features
 
 -   **Focus & Rest Modes**: Standard 25m Focus / 5m Rest intervals.

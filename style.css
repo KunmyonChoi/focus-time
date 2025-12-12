@@ -391,6 +391,38 @@ body:fullscreen {
     color: var(--card-bg);
 }
 
+.checkbox-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.checkbox-option {
+    flex: 1;
+    position: relative;
+    cursor: pointer;
+}
+
+.checkbox-option input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.checkbox-option span {
+    display: block;
+    text-align: center;
+    padding: 0.5rem;
+    border: 1px solid var(--text-primary);
+    border-radius: 4px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.checkbox-option input[type="checkbox"]:checked+span {
+    background-color: var(--text-primary);
+    color: var(--card-bg);
+}
+
 #custom-duration-wrapper {
     margin-top: 1rem;
 }

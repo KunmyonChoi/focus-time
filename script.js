@@ -13,6 +13,10 @@ class FocusTimer {
         this.audioContext = null;
         this.pipWindow = null;
 
+        // Auto-start settings
+        this.autoStartRest = false;
+        this.autoStartFocus = false;
+
         // Three.js vars
         this.scene = null;
         this.camera = null;
@@ -166,6 +170,12 @@ class FocusTimer {
 
         document.getElementById('custom-minutes').value = currentMins;
 
+        // Set Auto-start checkboxes
+        const autoRestCheckbox = document.querySelector('input[name="auto-start-rest"]');
+        const autoFocusCheckbox = document.querySelector('input[name="auto-start-focus"]');
+        if (autoRestCheckbox) autoRestCheckbox.checked = this.autoStartRest;
+        if (autoFocusCheckbox) autoFocusCheckbox.checked = this.autoStartFocus;
+
         // Set sound preference
         const soundRadios = document.getElementsByName('timer-sound');
         Array.from(soundRadios).forEach(radio => {
@@ -214,6 +224,10 @@ class FocusTimer {
             this.applyTheme();
             this.applyBackgroundState();
         }
+
+        // Save Auto-start settings
+        this.autoStartRest = formData.get('auto-start-rest') === 'on';
+        this.autoStartFocus = formData.get('auto-start-focus') === 'on';
 
         // Persist all settings
         this.persistSettings();
@@ -481,22 +495,17 @@ class FocusTimer {
 
     toggleMode() {
         this.pauseTimer();
+        const nextMode = this.mode === 'FOCUS' ? 'REST' : 'FOCUS';
+        this.switchToMode(nextMode);
+    }
 
-        // Switch Logic
-        if (this.mode === 'FOCUS') {
-            this.mode = 'REST';
-            this.timeLeft = this.timers.REST;
-        } else {
-            this.mode = 'FOCUS';
-            this.timeLeft = this.timers.FOCUS;
-        }
+    switchToMode(targetMode) {
+        this.mode = targetMode;
+        this.timeLeft = this.timers[targetMode];
 
-        // Update UI
         this.updateStatus();
         this.updateDisplay();
         this.startPauseIcon.className = 'ph ph-play';
-
-        // Trigger Animation
         this.toggle3DAnimation();
     }
 
@@ -504,7 +513,9 @@ class FocusTimer {
         const settings = {
             focusDuration: this.timers.FOCUS,
             soundPreference: this.soundPreference,
-            theme: this.theme
+            theme: this.theme,
+            autoStartRest: this.autoStartRest,
+            autoStartFocus: this.autoStartFocus
         };
         localStorage.setItem('focusTimerSettings', JSON.stringify(settings));
     }
@@ -523,6 +534,10 @@ class FocusTimer {
 
                 if (settings.soundPreference) this.soundPreference = settings.soundPreference;
                 if (settings.theme) this.theme = settings.theme;
+
+                if (typeof settings.autoStartRest !== 'undefined') this.autoStartRest = settings.autoStartRest;
+                if (typeof settings.autoStartFocus !== 'undefined') this.autoStartFocus = settings.autoStartFocus;
+
                 // showBackground is deprecated
             } catch (e) {
                 console.error('Failed to load settings', e);
@@ -533,26 +548,40 @@ class FocusTimer {
     completeTimer() {
         this.pauseTimer();
 
-        // Play sound
-        if (this.soundPreference !== 'mute') {
-            this.playSound(this.soundPreference);
-        }
+        // Determine next mode and auto-start
+        let nextMode = this.mode === 'FOCUS' ? 'REST' : 'FOCUS';
+        let shouldAutoStart = (this.mode === 'FOCUS' && this.autoStartRest) ||
+            (this.mode === 'REST' && this.autoStartFocus);
 
-        // Switch modes
-        if (this.mode === 'FOCUS') {
-            this.mode = 'REST';
-            this.timeLeft = this.timers.REST;
+        if (shouldAutoStart) {
+            this.playTransitionSequence(nextMode);
         } else {
-            this.mode = 'FOCUS';
-            this.timeLeft = this.timers.FOCUS;
+            // Standard behavior
+            if (this.soundPreference !== 'mute') {
+                this.playSound(this.soundPreference);
+            }
+            this.switchToMode(nextMode);
+        }
+    }
+
+    async playTransitionSequence(nextMode) {
+        // Ensure context is running
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
         }
 
-        this.updateStatus();
-        this.updateDisplay();
-        this.startPauseIcon.className = 'ph ph-play';
+        if (this.soundPreference !== 'mute') {
+            for (let i = 0; i < 3; i++) {
+                this.playSound(this.soundPreference);
+                // Wait for sound to mostly finish.
+                // Beep ~0.1s, Alarm ~1.2s, Chime ~1.5s
+                // Using 1.5s as a safe 
+                await new Promise(r => setTimeout(r, 1500));
+            }
+        }
 
-        // Check for 3D animation trigger
-        this.toggle3DAnimation();
+        this.switchToMode(nextMode);
+        this.startTimer();
     }
 
     updateDisplay() {
