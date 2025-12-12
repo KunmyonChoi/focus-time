@@ -375,9 +375,12 @@ class FocusTimer {
             this.pipPlaceholder.classList.remove('hidden');
 
             // Listen for close logic to bring it back
-            this.pipWindow.addEventListener('pagehide', (event) => {
-                this.closeCompactMode();
-            });
+            // Start polling to check if window is closed (more robust than pagehide)
+            this.pipCheckInterval = setInterval(() => {
+                if (this.pipWindow && this.pipWindow.closed) {
+                    this.closeCompactMode();
+                }
+            }, 500);
 
             this.pipBtn.innerHTML = '<i class="ph ph-x-circle"></i>'; // Icon to indicate close? Or keep regular
 
@@ -387,6 +390,10 @@ class FocusTimer {
     }
 
     closeCompactMode() {
+        if (this.pipCheckInterval) {
+            clearInterval(this.pipCheckInterval);
+            this.pipCheckInterval = null;
+        }
         if (this.pipWindow) {
             const timerCard = this.pipWindow.document.querySelector('.timer-card');
             if (timerCard) {
@@ -507,6 +514,7 @@ class FocusTimer {
         this.updateDisplay();
         this.startPauseIcon.className = 'ph ph-play';
         this.toggle3DAnimation();
+        this.changeQuote();
     }
 
     persistSettings() {
