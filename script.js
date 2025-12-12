@@ -11,7 +11,12 @@ class FocusTimer {
         this.soundPreference = 'beep';
         this.theme = 'charcoal';
         this.audioContext = null;
-        this.pipWindow = null;
+        this.audioContext = null;
+        this.pipVideo = document.getElementById('pip-video');
+        this.pipCanvas = document.getElementById('pip-canvas');
+        this.pipCtx = this.pipCanvas ? this.pipCanvas.getContext('2d') : null;
+        this.pipActive = false;
+        this.isAutoPipEnabled = false; // Toggle for auto feature
 
         // Auto-start settings
         this.autoStartRest = false;
@@ -78,6 +83,7 @@ class FocusTimer {
     init() {
         this.loadSettings();
         this.setupEventListeners();
+        this.attachButtonListeners(); // Attach explicit button handlers
         this.updateDisplay();
         this.updateStatus();
         this.updateDisplay();
@@ -99,15 +105,11 @@ class FocusTimer {
     }
 
     setupEventListeners() {
-        this.startPauseBtn.addEventListener('click', () => this.toggleTimer());
-        this.resetBtn.addEventListener('click', () => this.resetTimer());
-        this.skipBtn.addEventListener('click', () => this.toggleMode());
-
-        // Settings events
+        // Form and Modal listeners (Static elements)
         this.settingsBtn.addEventListener('click', () => this.openSettings());
-        this.pipBtn.addEventListener('click', () => this.toggleCompactMode());
-        this.restoreBtn.addEventListener('click', () => this.closeCompactMode());
-        this.fsBtn.addEventListener('click', () => this.toggleFullscreen());
+        this.pipBtn.addEventListener('click', () => this.toggleVideoPip());
+        // this.restoreBtn removed/irrelevant for Video PIP effectively, or acts as stop
+        this.restoreBtn.addEventListener('click', () => this.exitVideoPip());
         this.closeModalBtn.addEventListener('click', () => this.closeSettings());
         this.settingsForm.addEventListener('submit', (e) => this.saveSettings(e));
 
@@ -144,6 +146,30 @@ class FocusTimer {
                     this.playSound(type);
                 }
             });
+        });
+    }
+
+    attachButtonListeners() {
+        // Use onclick to allow easy re-binding without duplication
+        // essential when moving nodes between documents (PIP)
+        if (this.startPauseBtn) this.startPauseBtn.onclick = () => this.toggleTimer();
+        if (this.resetBtn) this.resetBtn.onclick = () => this.resetTimer();
+        if (this.skipBtn) this.skipBtn.onclick = () => this.toggleMode();
+        if (this.fsBtn) this.fsBtn.onclick = () => this.toggleFullscreen();
+
+        // Auto PIP Visibility Handler
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                // Try Auto-Enter if timer is running
+                if (this.isRunning && !this.pipActive) {
+                    this.enterVideoPip().catch(e => console.log("Auto-PIP failed (expected if no user gesture):", e));
+                }
+            } else {
+                // Auto-Exit when visible
+                if (this.pipActive) {
+                    this.exitVideoPip();
+                }
+            }
         });
     }
 
@@ -318,115 +344,126 @@ class FocusTimer {
         }, { once: true }); // Using once to avoid stacking, or better logic in init
     }
 
-    async toggleCompactMode() {
-        // Check API support
-        if (!('documentPictureInPicture' in window)) {
-            alert('Compact Mode (Picture-in-Picture) is not supported in this browser. Please use Chrome 111+ or Edge.');
-            return;
+    async toggleVideoPip() {
+        if (document.pictureInPictureElement) {
+            this.exitVideoPip();
+        } else {
+            this.enterVideoPip();
         }
+    }
 
-        // Check if PiP is already open
-        if (this.pipWindow) {
-            this.closeCompactMode();
-            return;
-        }
-
+    async enterVideoPip() {
         try {
-            // Request PiP Window
-            this.pipWindow = await window.documentPictureInPicture.requestWindow({
-                width: 300,
-                height: 300,
-            });
+            if (!this.pipVideo) return;
 
-            // Copy stylesheets
-            [...document.styleSheets].forEach((styleSheet) => {
-                try {
-                    const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
-                    const style = document.createElement('style');
-                    style.textContent = cssRules;
-                    this.pipWindow.document.head.appendChild(style);
-                } catch (e) {
-                    const link = document.createElement('link');
-                    link.rel = 'stylesheet';
-                    link.type = styleSheet.type;
-                    link.media = styleSheet.media;
-                    link.href = styleSheet.href;
-                    this.pipWindow.document.head.appendChild(link);
-                }
-            });
+            // 1. Start Canvas Rendering
+            this.startCanvasLoop();
 
-            // Add compact mode class
-            this.pipWindow.document.body.classList.add('compact-mode');
-
-            // Sync state to new window
-            this.pipWindow.document.body.setAttribute('data-theme', this.theme);
-            this.pipWindow.document.body.style.backgroundImage = document.body.style.backgroundImage;
-            if (document.body.classList.contains('no-background')) {
-                this.pipWindow.document.body.classList.add('no-background');
-            } else {
-                this.pipWindow.document.body.classList.remove('no-background');
+            // 2. Capture Stream if not already
+            if (this.pipVideo.srcObject === null) {
+                const stream = this.pipCanvas.captureStream(30); // 30 FPS
+                this.pipVideo.srcObject = stream;
+                await this.pipVideo.play();
             }
 
-            // Move Timer Card content to PiP
-            const timerCard = document.querySelector('.timer-card');
-            this.pipWindow.document.body.append(timerCard);
-
-            // Show Placeholder in main window
+            // 3. Request PIP
+            await this.pipVideo.requestPictureInPicture();
+            this.pipActive = true;
+            this.pipBtn.innerHTML = '<i class="ph ph-x-circle"></i>';
             this.pipPlaceholder.classList.remove('hidden');
 
-            // Listen for close logic to bring it back
-            // Start polling to check if window is closed (more robust than pagehide)
-            this.pipCheckInterval = setInterval(() => {
-                if (this.pipWindow && this.pipWindow.closed) {
-                    this.closeCompactMode();
-                }
-            }, 500);
+            // 4. Setup Media Session Controls
+            this.updateMediaSession();
 
-            this.pipBtn.innerHTML = '<i class="ph ph-x-circle"></i>'; // Icon to indicate close? Or keep regular
+            this.pipVideo.addEventListener('leavepictureinpicture', () => {
+                this.pipActive = false;
+                this.stopCanvasLoop();
+                this.pipBtn.innerHTML = '<i class="ph ph-picture-in-picture"></i>';
+                this.pipPlaceholder.classList.add('hidden');
+            }, { once: true });
 
-        } catch (err) {
-            console.error('Failed to enter Compact Mode:', err);
+        } catch (error) {
+            console.error('Failed to enter Video PIP:', error);
+            throw error;
         }
     }
 
-    closeCompactMode() {
-        if (this.pipCheckInterval) {
-            clearInterval(this.pipCheckInterval);
-            this.pipCheckInterval = null;
+    exitVideoPip() {
+        if (document.pictureInPictureElement) {
+            document.exitPictureInPicture().catch(console.error);
         }
-        if (this.pipWindow) {
-            const timerCard = this.pipWindow.document.querySelector('.timer-card');
-            if (timerCard) {
-                // Move back to main window before placeholder
-                // Or typically just append to body? Original implementation was append to body?
-                // Let's actually append it to `main` or `body` as per original structure.
-                // Originally it was in body > main.timer-card
-                // So appending to body is correct if it was a direct child of body.
-                document.body.insertBefore(timerCard, this.pipPlaceholder);
-            }
-            this.pipWindow.close();
-            this.pipWindow = null;
-        }
-
-        // Ensure UI state reset
-        this.pipPlaceholder.classList.add('hidden');
-        this.pipBtn.innerHTML = '<i class="ph ph-picture-in-picture"></i>';
     }
+
+    // Canvas Rendering Logic
+    startCanvasLoop() {
+        if (this.canvasInterval) clearInterval(this.canvasInterval);
+        this.canvasInterval = setInterval(() => this.renderCanvas(), 100); // 10 FPS enough for timer
+    }
+
+    stopCanvasLoop() {
+        if (this.canvasInterval) clearInterval(this.canvasInterval);
+    }
+
+    renderCanvas() {
+        if (!this.pipCtx) return;
+        const ctx = this.pipCtx;
+        const w = this.pipCanvas.width;
+        const h = this.pipCanvas.height;
+
+        // Background
+        ctx.fillStyle = this.mode === 'FOCUS' ? '#1e1e1e' : '#0f172a'; // Simple fallback colors
+        // If custom theme colors wanted, logic gets complex, keep simple for now
+        ctx.fillRect(0, 0, w, h);
+
+        // Text
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Time
+        ctx.font = 'bold 120px Inter, sans-serif';
+        const timeLeftStr = this.timeDisplay.textContent;
+        ctx.fillText(timeLeftStr, w / 2, h / 2);
+
+        // Status
+        ctx.font = '30px Inter, sans-serif';
+        const status = this.mode === 'FOCUS' ? 'FOCUS TIME' : 'REST TIME';
+        ctx.fillText(status, w / 2, h / 2 + 80);
+    }
+
+    updateMediaSession() {
+        if (!('mediaSession' in navigator)) return;
+
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: this.mode === 'FOCUS' ? 'Focus Session' : 'Rest Break',
+            artist: 'Focus Timer',
+            album: this.timeDisplay.textContent
+        });
+
+        navigator.mediaSession.playbackState = this.isRunning ? 'playing' : 'paused';
+
+        navigator.mediaSession.setActionHandler('play', () => {
+            this.startTimer();
+            this.updateMediaSession(); // Update state
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+            this.pauseTimer();
+            this.updateMediaSession();
+        });
+    }
+
+    // Legacy method replacements to avoid breaking references
+    closeCompactMode() { this.exitVideoPip(); }
+
 
     applyTheme() {
         // Apply to main window
         document.body.setAttribute('data-theme', this.theme);
-
-        // Apply to PiP if exists
-        if (this.pipWindow) {
-            this.pipWindow.document.body.setAttribute('data-theme', this.theme);
-        }
     }
 
     applyBackgroundState() {
         if (this.theme === 'scenic') {
             document.body.classList.remove('no-background');
-            if (this.pipWindow) this.pipWindow.document.body.classList.remove('no-background');
 
             if (!document.body.style.backgroundImage) {
                 this.changeBackground();
@@ -598,6 +635,12 @@ class FocusTimer {
         const displayString = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         this.timeDisplay.textContent = displayString;
         document.title = `${displayString} - Focus Timer`;
+
+        // Sync Media Session
+        if (this.pipActive && 'mediaSession' in navigator && navigator.mediaSession.metadata) {
+            navigator.mediaSession.metadata.album = displayString;
+            navigator.mediaSession.playbackState = this.isRunning ? 'playing' : 'paused';
+        }
     }
 
     updateStatus() {
