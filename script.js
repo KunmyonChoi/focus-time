@@ -565,6 +565,11 @@ class FocusTimer {
         this.isRunning = true;
         this.startPauseIcon.className = 'ph ph-pause';
 
+        // Resume Video PIP if active (critical for Play button in PIP to work)
+        if (this.pipActive && this.pipVideo && this.pipVideo.paused) {
+            this.pipVideo.play().catch(e => console.error("Failed to resume PIP video:", e));
+        }
+
         this.interval = setInterval(() => {
             this.timeLeft--;
             this.updateDisplay();
@@ -579,6 +584,12 @@ class FocusTimer {
         this.isRunning = false;
         this.startPauseIcon.className = 'ph ph-play';
         clearInterval(this.interval);
+
+        // Pause Video PIP to stay in sync (and save resources)
+        // Also ensures the UI 'Play' button appears correctly in PIP
+        if (this.pipActive && this.pipVideo && !this.pipVideo.paused) {
+            this.pipVideo.pause();
+        }
     }
 
     resetTimer() {
