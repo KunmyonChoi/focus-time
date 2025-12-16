@@ -151,6 +151,8 @@ body:fullscreen {
     align-items: center;
     margin-bottom: 2rem;
     color: var(--text-secondary);
+    /* Enable window dragging in Electron */
+    -webkit-app-region: drag;
 }
 
 .quote-container {
@@ -182,6 +184,8 @@ body:fullscreen {
     font-size: 1.8rem;
     padding: 0.5rem;
     border-radius: 50%;
+    /* Allow clicking buttons in Electron draggable area */
+    -webkit-app-region: no-drag;
 }
 
 .icon-btn:hover {
@@ -257,6 +261,8 @@ body:fullscreen {
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     letter-spacing: 0.1em;
     text-transform: uppercase;
+    /* Allow clicking buttons in Electron draggable area */
+    -webkit-app-region: no-drag;
 }
 
 .control-btn:hover {
