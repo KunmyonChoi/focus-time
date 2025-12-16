@@ -8,6 +8,11 @@ contextBridge.exposeInMainWorld('electron', {
         ipcRenderer.send('timer-update', state);
     },
 
+    // Send settings sync to main process
+    sendSettingsSync: (settings) => {
+        ipcRenderer.send('settings-sync', settings);
+    },
+
     // Receive commands from main process (menu items)
     onToggleTimer: (callback) => {
         ipcRenderer.on('toggle-timer', callback);

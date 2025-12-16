@@ -8,6 +8,13 @@ let timerState = {
     timeLeft: 25 * 60,
     isRunning: false
 };
+let appSettings = {
+    focusDuration: 25,
+    theme: 'charcoal',
+    sound: 'beep',
+    autoStartRest: false,
+    autoStartFocus: false
+};
 
 function createTray() {
     // Create a simple template icon for the tray
@@ -18,17 +25,8 @@ function createTray() {
     tray.setToolTip('Focus Timer');
     updateTrayTitle();
 
-    tray.on('click', () => {
-        if (mainWindow) {
-            if (mainWindow.isVisible()) {
-                mainWindow.hide();
-            } else {
-                showWindow();
-            }
-        } else {
-            createWindow();
-        }
-    });
+    // Remove click handler - let context menu handle everything
+    // tray.on('click', ...) removed
 
     updateTrayMenu();
 }
@@ -83,29 +81,37 @@ function updateTrayMenu() {
                 {
                     label: '25 minutes',
                     type: 'radio',
-                    checked: true,
+                    checked: appSettings.focusDuration === 25,
                     click: () => {
+                        appSettings.focusDuration = 25;
                         if (mainWindow) {
                             mainWindow.webContents.send('set-focus-duration', 25);
                         }
+                        updateTrayMenu();
                     }
                 },
                 {
                     label: '50 minutes',
                     type: 'radio',
+                    checked: appSettings.focusDuration === 50,
                     click: () => {
+                        appSettings.focusDuration = 50;
                         if (mainWindow) {
                             mainWindow.webContents.send('set-focus-duration', 50);
                         }
+                        updateTrayMenu();
                     }
                 },
                 {
                     label: '90 minutes',
                     type: 'radio',
+                    checked: appSettings.focusDuration === 90,
                     click: () => {
+                        appSettings.focusDuration = 90;
                         if (mainWindow) {
                             mainWindow.webContents.send('set-focus-duration', 90);
                         }
+                        updateTrayMenu();
                     }
                 }
             ]
@@ -116,56 +122,73 @@ function updateTrayMenu() {
                 {
                     label: 'Scenic',
                     type: 'radio',
+                    checked: appSettings.theme === 'scenic',
                     click: () => {
+                        appSettings.theme = 'scenic';
                         if (mainWindow) {
                             mainWindow.webContents.send('set-theme', 'scenic');
                         }
+                        updateTrayMenu();
                     }
                 },
                 {
                     label: 'Charcoal',
                     type: 'radio',
-                    checked: true,
+                    checked: appSettings.theme === 'charcoal',
                     click: () => {
+                        appSettings.theme = 'charcoal';
                         if (mainWindow) {
                             mainWindow.webContents.send('set-theme', 'charcoal');
                         }
+                        updateTrayMenu();
                     }
                 },
                 {
                     label: 'Midnight',
                     type: 'radio',
+                    checked: appSettings.theme === 'midnight',
                     click: () => {
+                        appSettings.theme = 'midnight';
                         if (mainWindow) {
                             mainWindow.webContents.send('set-theme', 'midnight');
                         }
+                        updateTrayMenu();
                     }
                 },
                 {
                     label: 'Sunrise',
                     type: 'radio',
+                    checked: appSettings.theme === 'sunrise',
                     click: () => {
+                        appSettings.theme = 'sunrise';
                         if (mainWindow) {
                             mainWindow.webContents.send('set-theme', 'sunrise');
                         }
+                        updateTrayMenu();
                     }
                 },
                 {
                     label: 'Forest',
                     type: 'radio',
+                    checked: appSettings.theme === 'forest',
                     click: () => {
+                        appSettings.theme = 'forest';
                         if (mainWindow) {
                             mainWindow.webContents.send('set-theme', 'forest');
                         }
+                        updateTrayMenu();
                     }
                 },
                 {
                     label: 'Berry',
                     type: 'radio',
+                    checked: appSettings.theme === 'berry',
                     click: () => {
+                        appSettings.theme = 'berry';
                         if (mainWindow) {
                             mainWindow.webContents.send('set-theme', 'berry');
                         }
+                        updateTrayMenu();
                     }
                 }
             ]
@@ -176,38 +199,49 @@ function updateTrayMenu() {
                 {
                     label: 'Beep',
                     type: 'radio',
-                    checked: true,
+                    checked: appSettings.sound === 'beep',
                     click: () => {
+                        appSettings.sound = 'beep';
                         if (mainWindow) {
                             mainWindow.webContents.send('set-sound', 'beep');
                         }
+                        updateTrayMenu();
                     }
                 },
                 {
                     label: 'Alarm',
                     type: 'radio',
+                    checked: appSettings.sound === 'alarm',
                     click: () => {
+                        appSettings.sound = 'alarm';
                         if (mainWindow) {
                             mainWindow.webContents.send('set-sound', 'alarm');
                         }
+                        updateTrayMenu();
                     }
                 },
                 {
                     label: 'Chime',
                     type: 'radio',
+                    checked: appSettings.sound === 'chime',
                     click: () => {
+                        appSettings.sound = 'chime';
                         if (mainWindow) {
                             mainWindow.webContents.send('set-sound', 'chime');
                         }
+                        updateTrayMenu();
                     }
                 },
                 {
                     label: 'Mute',
                     type: 'radio',
+                    checked: appSettings.sound === 'mute',
                     click: () => {
+                        appSettings.sound = 'mute';
                         if (mainWindow) {
                             mainWindow.webContents.send('set-sound', 'mute');
                         }
+                        updateTrayMenu();
                     }
                 }
             ]
@@ -218,19 +252,25 @@ function updateTrayMenu() {
                 {
                     label: 'Auto-start Rest',
                     type: 'checkbox',
+                    checked: appSettings.autoStartRest,
                     click: (menuItem) => {
+                        appSettings.autoStartRest = menuItem.checked;
                         if (mainWindow) {
                             mainWindow.webContents.send('set-auto-start-rest', menuItem.checked);
                         }
+                        updateTrayMenu();
                     }
                 },
                 {
                     label: 'Auto-start Focus',
                     type: 'checkbox',
+                    checked: appSettings.autoStartFocus,
                     click: (menuItem) => {
+                        appSettings.autoStartFocus = menuItem.checked;
                         if (mainWindow) {
                             mainWindow.webContents.send('set-auto-start-focus', menuItem.checked);
                         }
+                        updateTrayMenu();
                     }
                 }
             ]
@@ -319,6 +359,16 @@ function showWindow() {
 ipcMain.on('timer-update', (event, state) => {
     timerState = state;
     updateTrayTitle();
+});
+
+// IPC handler for settings sync from renderer
+ipcMain.on('settings-sync', (event, settings) => {
+    appSettings.focusDuration = settings.focusDuration / 60; // Convert seconds to minutes
+    appSettings.theme = settings.theme;
+    appSettings.sound = settings.sound;
+    appSettings.autoStartRest = settings.autoStartRest;
+    appSettings.autoStartFocus = settings.autoStartFocus;
+    updateTrayMenu();
 });
 
 app.whenReady().then(() => {

@@ -111,9 +111,13 @@ class FocusTimer {
     setupEventListeners() {
         // Form and Modal listeners (Static elements)
         this.settingsBtn.addEventListener('click', () => this.openSettings());
-        this.pipBtn.addEventListener('click', () => this.toggleVideoPip());
-        // this.restoreBtn removed/irrelevant for Video PIP effectively, or acts as stop
-        this.restoreBtn.addEventListener('click', () => this.exitVideoPip());
+
+        // PIP only for browser (not Electron)
+        if (typeof window.electron === 'undefined') {
+            this.pipBtn.addEventListener('click', () => this.toggleVideoPip());
+            this.restoreBtn.addEventListener('click', () => this.exitVideoPip());
+        }
+
         this.closeModalBtn.addEventListener('click', () => this.closeSettings());
         this.settingsForm.addEventListener('submit', (e) => this.saveSettings(e));
 
@@ -163,20 +167,22 @@ class FocusTimer {
             this.fsBtn.onclick = () => this.toggleFullscreen();
         }
 
-        // Auto PIP Visibility Handler
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                // Try Auto-Enter if timer is running
-                if (this.isRunning && !this.pipActive) {
-                    this.enterVideoPip().catch(e => console.log("Auto-PIP failed (expected if no user gesture):", e));
+        // Auto PIP Visibility Handler (only for browser)
+        if (typeof window.electron === 'undefined') {
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') {
+                    // Try Auto-Enter if timer is running
+                    if (this.isRunning && !this.pipActive) {
+                        this.enterVideoPip().catch(e => console.log("Auto-PIP failed (expected if no user gesture):", e));
+                    }
+                } else {
+                    // Auto-Exit when visible
+                    if (this.pipActive) {
+                        this.exitVideoPip();
+                    }
                 }
-            } else {
-                // Auto-Exit when visible
-                if (this.pipActive) {
-                    this.exitVideoPip();
-                }
-            }
-        });
+            });
+        }
     }
 
     openSettings() {
@@ -645,6 +651,17 @@ class FocusTimer {
             autoStartFocus: this.autoStartFocus
         };
         localStorage.setItem('focusTimerSettings', JSON.stringify(settings));
+
+        // Sync settings to Electron main process
+        if (typeof window.electron !== 'undefined' && window.electron.sendSettingsSync) {
+            window.electron.sendSettingsSync({
+                focusDuration: this.timers.FOCUS,
+                theme: this.theme,
+                sound: this.soundPreference,
+                autoStartRest: this.autoStartRest,
+                autoStartFocus: this.autoStartFocus
+            });
+        }
     }
 
     loadSettings() {
