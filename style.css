@@ -195,6 +195,15 @@ body:fullscreen {
     background-color: rgba(0, 0, 0, 0.03);
 }
 
+.icon-btn:focus {
+    outline: none;
+}
+
+.icon-btn:focus-visible {
+    outline: 2px solid var(--text-secondary);
+    outline-offset: 2px;
+}
+
 @media (prefers-color-scheme: dark) {
     .icon-btn:hover {
         background-color: rgba(255, 255, 255, 0.05);
@@ -276,6 +285,15 @@ body:fullscreen {
 
 .control-btn:active {
     transform: translateY(0);
+}
+
+.control-btn:focus {
+    outline: none;
+}
+
+.control-btn:focus-visible {
+    outline: 2px solid var(--text-primary);
+    outline-offset: 2px;
 }
 
 /* Footer & Status */

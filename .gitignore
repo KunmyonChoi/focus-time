@@ -4,6 +4,7 @@ node_modules/
 # Build output
 dist/
 build/
+!build/icon.png
 
 # macOS
 .DS_Store

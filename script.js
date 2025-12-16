@@ -22,6 +22,8 @@ class FocusTimer {
         // Auto-start settings
         this.autoStartRest = false;
         this.autoStartFocus = false;
+        this.fullScreenRest = false;
+        this.alwaysOnTop = false;
 
         // Three.js vars
         this.scene = null;
@@ -211,8 +213,15 @@ class FocusTimer {
         // Set Auto-start checkboxes
         const autoRestCheckbox = document.querySelector('input[name="auto-start-rest"]');
         const autoFocusCheckbox = document.querySelector('input[name="auto-start-focus"]');
+        const fullScreenRestCheckbox = document.querySelector('input[name="fullscreen-rest"]');
+
         if (autoRestCheckbox) autoRestCheckbox.checked = this.autoStartRest;
         if (autoFocusCheckbox) autoFocusCheckbox.checked = this.autoStartFocus;
+        if (fullScreenRestCheckbox) fullScreenRestCheckbox.checked = this.fullScreenRest;
+
+        // Set Always on Top
+        const alwaysOnTopCheckbox = document.querySelector('input[name="always-on-top"]');
+        if (alwaysOnTopCheckbox) alwaysOnTopCheckbox.checked = this.alwaysOnTop;
 
         // Set sound preference
         const soundRadios = document.getElementsByName('timer-sound');
@@ -266,6 +275,13 @@ class FocusTimer {
         // Save Auto-start settings
         this.autoStartRest = formData.get('auto-start-rest') === 'on';
         this.autoStartFocus = formData.get('auto-start-focus') === 'on';
+        this.fullScreenRest = formData.get('fullscreen-rest') === 'on';
+
+        // Save Always On Top
+        this.alwaysOnTop = formData.get('always-on-top') === 'on';
+        if (typeof window.electron !== 'undefined') {
+            window.electron.setAlwaysOnTop(this.alwaysOnTop);
+        }
 
         // Persist all settings
         this.persistSettings();
@@ -639,7 +655,38 @@ class FocusTimer {
         this.startPauseIcon.className = 'ph ph-play';
         this.toggle3DAnimation();
         this.changeQuote();
+        this.handleWindowBehavior(targetMode); // Handle window state
         this.sendStateToElectron(); // Update menubar
+    }
+
+    handleWindowBehavior(mode) {
+        if (typeof window.electron === 'undefined') return;
+
+        if (mode === 'REST') {
+            // Always show window when entering rest
+            window.electron.requestShowWindow();
+
+            if (this.fullScreenRest) {
+                // Wait slightly for window to show before fullscreen
+                setTimeout(() => window.electron.requestFullscreen(), 200);
+            } else {
+                // Ensure we are in normal window mode if not fullscreen
+                window.electron.requestExitFullscreen();
+            }
+        } else if (mode === 'FOCUS') {
+            // If returning to focus, standard behavior
+            // If auto-start focus is ON, we usually hide.
+            // But if Manual return, we might want to exit fullscreen if valid.
+
+            if (this.autoStartFocus) {
+                // Auto-hide logic
+                window.electron.requestExitFullscreen();
+                setTimeout(() => window.electron.requestHideWindow(), 300);
+            } else {
+                // Manual return to focus - stay visible, exit fullscreen
+                window.electron.requestExitFullscreen();
+            }
+        }
     }
 
     persistSettings() {
@@ -648,7 +695,9 @@ class FocusTimer {
             soundPreference: this.soundPreference,
             theme: this.theme,
             autoStartRest: this.autoStartRest,
-            autoStartFocus: this.autoStartFocus
+            autoStartFocus: this.autoStartFocus,
+            fullScreenRest: this.fullScreenRest,
+            alwaysOnTop: this.alwaysOnTop
         };
         localStorage.setItem('focusTimerSettings', JSON.stringify(settings));
 
@@ -659,7 +708,9 @@ class FocusTimer {
                 theme: this.theme,
                 sound: this.soundPreference,
                 autoStartRest: this.autoStartRest,
-                autoStartFocus: this.autoStartFocus
+                autoStartFocus: this.autoStartFocus,
+                fullScreenRest: this.fullScreenRest,
+                alwaysOnTop: this.alwaysOnTop
             });
         }
     }
@@ -681,6 +732,13 @@ class FocusTimer {
 
                 if (typeof settings.autoStartRest !== 'undefined') this.autoStartRest = settings.autoStartRest;
                 if (typeof settings.autoStartFocus !== 'undefined') this.autoStartFocus = settings.autoStartFocus;
+                if (typeof settings.fullScreenRest !== 'undefined') this.fullScreenRest = settings.fullScreenRest;
+                if (typeof settings.alwaysOnTop !== 'undefined') {
+                    this.alwaysOnTop = settings.alwaysOnTop;
+                    if (typeof window.electron !== 'undefined') {
+                        window.electron.setAlwaysOnTop(this.alwaysOnTop);
+                    }
+                }
 
                 // showBackground is deprecated
             } catch (e) {
@@ -726,24 +784,8 @@ class FocusTimer {
 
         this.switchToMode(nextMode);
 
-        // Auto-window control for Electron
-        if (typeof window.electron !== 'undefined') {
-            // Auto-start Rest: Show window in fullscreen when transitioning to REST
-            if (nextMode === 'REST' && this.autoStartRest) {
-                window.electron.requestShowWindow();
-                // Small delay to ensure window is shown before requesting fullscreen
-                await new Promise(r => setTimeout(r, 200));
-                window.electron.requestFullscreen();
-            }
-            // Auto-start Focus: Hide window when transitioning to FOCUS
-            else if (nextMode === 'FOCUS' && this.autoStartFocus) {
-                // Exit fullscreen first if in fullscreen mode to prevent black screen
-                window.electron.requestExitFullscreen();
-                // Wait for fullscreen exit animation to complete
-                await new Promise(r => setTimeout(r, 300));
-                window.electron.requestHideWindow();
-            }
-        }
+        // Auto-window control for Electron is now handled in switchToMode -> handleWindowBehavior
+        // Logic moved to ensure it applies to ALL transitions (manual or auto)
 
         this.startTimer();
     }
@@ -1019,6 +1061,16 @@ class FocusTimer {
 
         window.electron.onSetAutoStartFocus((event, value) => {
             this.autoStartFocus = value;
+            this.persistSettings();
+        });
+
+        window.electron.onSetFullScreenRest((event, value) => {
+            this.fullScreenRest = value;
+            this.persistSettings();
+        });
+
+        window.electron.onSetAlwaysOnTop((event, value) => {
+            this.alwaysOnTop = value;
             this.persistSettings();
         });
 

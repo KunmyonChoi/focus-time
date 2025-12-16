@@ -46,6 +46,10 @@ contextBridge.exposeInMainWorld('electron', {
         ipcRenderer.on('set-auto-start-focus', callback);
     },
 
+    onSetFullScreenRest: (callback) => {
+        ipcRenderer.on('set-fullscreen-rest', callback);
+    },
+
     // Request window actions from renderer
     requestShowWindow: () => {
         ipcRenderer.send('request-show-window');
@@ -61,5 +65,13 @@ contextBridge.exposeInMainWorld('electron', {
 
     requestExitFullscreen: () => {
         ipcRenderer.send('request-exit-fullscreen');
+    },
+
+    setAlwaysOnTop: (flag) => {
+        ipcRenderer.send('set-always-on-top', flag);
+    },
+
+    onSetAlwaysOnTop: (callback) => {
+        ipcRenderer.on('set-always-on-top', callback);
     }
 });

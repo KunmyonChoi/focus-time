@@ -21,6 +21,8 @@ let appSettings = {
     sound: 'beep',
     autoStartRest: false,
     autoStartFocus: false,
+    fullScreenRest: false,
+    alwaysOnTop: false,
     launchAtLogin: false
 };
 
@@ -310,10 +312,35 @@ function updateTrayMenu() {
                         }
                         updateTrayMenu();
                     }
+                },
+                {
+                    label: 'Full Screen Rest',
+                    type: 'checkbox',
+                    checked: appSettings.fullScreenRest,
+                    click: (menuItem) => {
+                        appSettings.fullScreenRest = menuItem.checked;
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-fullscreen-rest', menuItem.checked);
+                        }
+                        updateTrayMenu();
+                    }
                 }
             ]
         },
         { type: 'separator' },
+        {
+            label: 'Always on Top',
+            type: 'checkbox',
+            checked: appSettings.alwaysOnTop,
+            click: (menuItem) => {
+                appSettings.alwaysOnTop = menuItem.checked;
+                if (mainWindow) {
+                    mainWindow.setAlwaysOnTop(menuItem.checked);
+                    mainWindow.webContents.send('set-always-on-top', menuItem.checked);
+                }
+                updateTrayMenu();
+            }
+        },
         {
             label: 'Launch at Login',
             type: 'checkbox',
@@ -369,6 +396,7 @@ function createWindow() {
             contextIsolation: true,
             preload: path.join(__dirname, 'preload.js')
         },
+        alwaysOnTop: appSettings.alwaysOnTop,
         // macOS specific: frameless window with vibrancy
         titleBarStyle: 'hiddenInset',
         vibrancy: 'under-window',
@@ -424,7 +452,14 @@ ipcMain.on('settings-sync', (event, settings) => {
     appSettings.theme = settings.theme;
     appSettings.sound = settings.sound;
     appSettings.autoStartRest = settings.autoStartRest;
+    appSettings.autoStartRest = settings.autoStartRest;
     appSettings.autoStartFocus = settings.autoStartFocus;
+    appSettings.fullScreenRest = settings.fullScreenRest;
+    appSettings.alwaysOnTop = settings.alwaysOnTop;
+
+    if (mainWindow) {
+        mainWindow.setAlwaysOnTop(appSettings.alwaysOnTop);
+    }
     updateTrayMenu();
 });
 
@@ -439,6 +474,15 @@ ipcMain.on('request-hide-window', () => {
     if (mainWindow) {
         mainWindow.hide();
     }
+});
+
+// Handler for direct setting change from renderer IPC
+ipcMain.on('set-always-on-top', (event, flag) => {
+    appSettings.alwaysOnTop = flag;
+    if (mainWindow) {
+        mainWindow.setAlwaysOnTop(flag);
+    }
+    updateTrayMenu();
 });
 
 ipcMain.on('request-fullscreen', () => {
