@@ -159,7 +159,9 @@ class FocusTimer {
         if (this.startPauseBtn) this.startPauseBtn.onclick = () => this.toggleTimer();
         if (this.resetBtn) this.resetBtn.onclick = () => this.resetTimer();
         if (this.skipBtn) this.skipBtn.onclick = () => this.toggleMode();
-        if (this.fsBtn) this.fsBtn.onclick = () => this.toggleFullscreen();
+        if (this.fsBtn && typeof window.electron === 'undefined') {
+            this.fsBtn.onclick = () => this.toggleFullscreen();
+        }
 
         // Auto PIP Visibility Handler
         document.addEventListener('visibilitychange', () => {
@@ -942,6 +944,45 @@ class FocusTimer {
 
         window.electron.onResetTimer(() => {
             this.resetTimer();
+        });
+
+        window.electron.onToggleMode(() => {
+            this.toggleMode();
+        });
+
+        window.electron.onSetFocusDuration((event, minutes) => {
+            this.timers.FOCUS = minutes * 60;
+            if (this.mode === 'FOCUS' && !this.isRunning) {
+                this.timeLeft = this.timers.FOCUS;
+                this.updateDisplay();
+            }
+            this.persistSettings();
+            this.sendStateToElectron();
+        });
+
+        window.electron.onSetTheme((event, theme) => {
+            this.theme = theme;
+            this.applyTheme();
+            this.applyBackgroundState();
+            if (theme === 'scenic') {
+                this.changeBackground();
+            }
+            this.persistSettings();
+        });
+
+        window.electron.onSetSound((event, sound) => {
+            this.soundPreference = sound;
+            this.persistSettings();
+        });
+
+        window.electron.onSetAutoStartRest((event, value) => {
+            this.autoStartRest = value;
+            this.persistSettings();
+        });
+
+        window.electron.onSetAutoStartFocus((event, value) => {
+            this.autoStartFocus = value;
+            this.persistSettings();
         });
 
         // Send initial state

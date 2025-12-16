@@ -663,3 +663,100 @@ body.compact-mode .control-btn {
     color: var(--text-secondary);
     margin-bottom: 1rem;
 }
+
+/* ========================================
+   Responsive Design for Small Windows
+   ======================================== */
+
+/* Small screens (< 500px width) */
+@media (max-width: 500px) {
+    .timer-card {
+        padding: 2rem 1.5rem;
+        max-width: 100%;
+        width: 95%;
+    }
+
+    /* Hide quote on small screens */
+    .quote-container {
+        display: none !important;
+    }
+
+    .card-header {
+        margin-bottom: 1.5rem;
+        justify-content: flex-end;
+    }
+
+    .timer-display h1 {
+        font-size: 4rem;
+    }
+
+    .controls {
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .icon-btn.large {
+        width: 56px;
+        height: 56px;
+        font-size: 1.5rem;
+    }
+
+    .icon-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+
+    .status-indicator {
+        font-size: 0.75rem;
+        letter-spacing: 2px;
+        margin-top: 1.5rem;
+    }
+}
+
+/* Medium-small screens (500px - 650px) */
+@media (min-width: 501px) and (max-width: 650px) {
+    .timer-card {
+        padding: 2.5rem 2rem;
+    }
+
+    .quote-container {
+        font-size: 0.9rem;
+    }
+
+    .timer-display h1 {
+        font-size: 5rem;
+    }
+
+    .controls {
+        gap: 1.5rem;
+    }
+}
+
+/* Extra small height adjustments */
+@media (max-height: 550px) {
+    .timer-card {
+        padding: 1.5rem;
+    }
+
+    .timer-display {
+        margin: 1rem 0;
+    }
+
+    .timer-display h1 {
+        font-size: 4rem;
+    }
+
+    .controls {
+        margin-top: 1rem;
+    }
+
+    .status-indicator {
+        margin-top: 1rem;
+    }
+
+    /* Ensure 3D scene doesn't overflow */
+    #rest-3d-scene {
+        height: 100vh;
+    }
+}

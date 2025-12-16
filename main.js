@@ -30,6 +30,12 @@ function createTray() {
         }
     });
 
+    updateTrayMenu();
+}
+
+function updateTrayMenu() {
+    if (!tray) return;
+
     // Context menu for right-click
     const contextMenu = Menu.buildFromTemplate([
         {
@@ -45,6 +51,7 @@ function createTray() {
         { type: 'separator' },
         {
             label: 'Start/Pause',
+            accelerator: 'CmdOrCtrl+Space',
             click: () => {
                 if (mainWindow) {
                     mainWindow.webContents.send('toggle-timer');
@@ -53,15 +60,185 @@ function createTray() {
         },
         {
             label: 'Reset',
+            accelerator: 'CmdOrCtrl+R',
             click: () => {
                 if (mainWindow) {
                     mainWindow.webContents.send('reset-timer');
                 }
             }
         },
+        {
+            label: 'Toggle Mode (Focus/Rest)',
+            accelerator: 'CmdOrCtrl+M',
+            click: () => {
+                if (mainWindow) {
+                    mainWindow.webContents.send('toggle-mode');
+                }
+            }
+        },
+        { type: 'separator' },
+        {
+            label: 'Focus Duration',
+            submenu: [
+                {
+                    label: '25 minutes',
+                    type: 'radio',
+                    checked: true,
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-focus-duration', 25);
+                        }
+                    }
+                },
+                {
+                    label: '50 minutes',
+                    type: 'radio',
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-focus-duration', 50);
+                        }
+                    }
+                },
+                {
+                    label: '90 minutes',
+                    type: 'radio',
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-focus-duration', 90);
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            label: 'Theme',
+            submenu: [
+                {
+                    label: 'Scenic',
+                    type: 'radio',
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-theme', 'scenic');
+                        }
+                    }
+                },
+                {
+                    label: 'Charcoal',
+                    type: 'radio',
+                    checked: true,
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-theme', 'charcoal');
+                        }
+                    }
+                },
+                {
+                    label: 'Midnight',
+                    type: 'radio',
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-theme', 'midnight');
+                        }
+                    }
+                },
+                {
+                    label: 'Sunrise',
+                    type: 'radio',
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-theme', 'sunrise');
+                        }
+                    }
+                },
+                {
+                    label: 'Forest',
+                    type: 'radio',
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-theme', 'forest');
+                        }
+                    }
+                },
+                {
+                    label: 'Berry',
+                    type: 'radio',
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-theme', 'berry');
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            label: 'Timer Sound',
+            submenu: [
+                {
+                    label: 'Beep',
+                    type: 'radio',
+                    checked: true,
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-sound', 'beep');
+                        }
+                    }
+                },
+                {
+                    label: 'Alarm',
+                    type: 'radio',
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-sound', 'alarm');
+                        }
+                    }
+                },
+                {
+                    label: 'Chime',
+                    type: 'radio',
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-sound', 'chime');
+                        }
+                    }
+                },
+                {
+                    label: 'Mute',
+                    type: 'radio',
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-sound', 'mute');
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            label: 'Auto-start',
+            submenu: [
+                {
+                    label: 'Auto-start Rest',
+                    type: 'checkbox',
+                    click: (menuItem) => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-auto-start-rest', menuItem.checked);
+                        }
+                    }
+                },
+                {
+                    label: 'Auto-start Focus',
+                    type: 'checkbox',
+                    click: (menuItem) => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('set-auto-start-focus', menuItem.checked);
+                        }
+                    }
+                }
+            ]
+        },
         { type: 'separator' },
         {
             label: 'Quit',
+            accelerator: 'CmdOrCtrl+Q',
             click: () => {
                 app.quit();
             }
@@ -85,8 +262,10 @@ function updateTrayTitle() {
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 800,
-        height: 600,
+        width: 400,
+        height: 500,
+        minWidth: 320,
+        minHeight: 400,
         show: false,
         webPreferences: {
             nodeIntegration: false,
@@ -96,7 +275,8 @@ function createWindow() {
         // macOS specific: frameless window with vibrancy
         titleBarStyle: 'hiddenInset',
         vibrancy: 'under-window',
-        visualEffectState: 'active'
+        visualEffectState: 'active',
+        resizable: true
     });
 
     mainWindow.loadFile('index.html');

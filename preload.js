@@ -15,5 +15,29 @@ contextBridge.exposeInMainWorld('electron', {
 
     onResetTimer: (callback) => {
         ipcRenderer.on('reset-timer', callback);
+    },
+
+    onToggleMode: (callback) => {
+        ipcRenderer.on('toggle-mode', callback);
+    },
+
+    onSetFocusDuration: (callback) => {
+        ipcRenderer.on('set-focus-duration', callback);
+    },
+
+    onSetTheme: (callback) => {
+        ipcRenderer.on('set-theme', callback);
+    },
+
+    onSetSound: (callback) => {
+        ipcRenderer.on('set-sound', callback);
+    },
+
+    onSetAutoStartRest: (callback) => {
+        ipcRenderer.on('set-auto-start-rest', callback);
+    },
+
+    onSetAutoStartFocus: (callback) => {
+        ipcRenderer.on('set-auto-start-focus', callback);
     }
 });
