@@ -25,23 +25,33 @@ function createTray() {
     tray.setToolTip('Focus Timer');
     updateTrayTitle();
 
-    // Left-click: show context menu
-    // Right-click: toggle play/pause
+    // Click behavior:
+    // - Normal click: show context menu
+    // - Control+Click or Right-click: toggle play/pause
     tray.on('click', (event, bounds) => {
-        // On macOS, we can use pressedKeys to detect which button was clicked
-        // For simplicity, we'll show menu on left click
-        tray.popUpContextMenu();
+        // Check if Control key is pressed (or it's a right-click on some systems)
+        if (event.ctrlKey || event.metaKey || event.shiftKey) {
+            // Toggle play/pause with modifier key
+            if (mainWindow && mainWindow.webContents) {
+                mainWindow.webContents.send('toggle-timer');
+            } else {
+                createWindow();
+                mainWindow.once('ready-to-show', () => {
+                    mainWindow.webContents.send('toggle-timer');
+                });
+            }
+        } else {
+            // Normal click shows menu
+            tray.popUpContextMenu();
+        }
     });
 
     tray.on('right-click', () => {
         // Right-click toggles play/pause
-        // Ensure window exists and is ready
         if (mainWindow && mainWindow.webContents) {
             mainWindow.webContents.send('toggle-timer');
         } else {
-            // Create window if it doesn't exist
             createWindow();
-            // Wait for window to be ready, then toggle
             mainWindow.once('ready-to-show', () => {
                 mainWindow.webContents.send('toggle-timer');
             });
