@@ -103,6 +103,9 @@ class FocusTimer {
         if (this.theme === 'scenic') {
             this.changeBackground();
         }
+
+        // Setup Electron IPC if running in Electron
+        this.setupElectronIPC();
     }
 
     setupEventListeners() {
@@ -573,11 +576,14 @@ class FocusTimer {
         this.interval = setInterval(() => {
             this.timeLeft--;
             this.updateDisplay();
+            this.sendStateToElectron(); // Update menubar
 
             if (this.timeLeft <= 0) {
                 this.completeTimer();
             }
         }, 1000);
+
+        this.sendStateToElectron(); // Update menubar
     }
 
     pauseTimer() {
@@ -590,6 +596,8 @@ class FocusTimer {
         if (this.pipActive && this.pipVideo && !this.pipVideo.paused) {
             this.pipVideo.pause();
         }
+
+        this.sendStateToElectron(); // Update menubar
     }
 
     resetTimer() {
@@ -623,6 +631,7 @@ class FocusTimer {
         this.startPauseIcon.className = 'ph ph-play';
         this.toggle3DAnimation();
         this.changeQuote();
+        this.sendStateToElectron(); // Update menubar
     }
 
     persistSettings() {
@@ -910,6 +919,47 @@ class FocusTimer {
         }
 
         this.particles.geometry.attributes.position.needsUpdate = true;
+    }
+
+    /* --------------------------
+       Electron IPC Communication
+       -------------------------- */
+    setupElectronIPC() {
+        // Check if running in Electron
+        if (typeof window.electron === 'undefined') {
+            return; // Not in Electron, skip
+        }
+
+        // Hide browser-specific features in Electron
+        document.querySelectorAll('.electron-hide').forEach(el => {
+            el.style.display = 'none';
+        });
+
+        // Listen for commands from main process
+        window.electron.onToggleTimer(() => {
+            this.toggleTimer();
+        });
+
+        window.electron.onResetTimer(() => {
+            this.resetTimer();
+        });
+
+        // Send initial state
+        this.sendStateToElectron();
+    }
+
+    sendStateToElectron() {
+        if (typeof window.electron === 'undefined') {
+            return; // Not in Electron
+        }
+
+        const state = {
+            mode: this.mode,
+            timeLeft: this.timeLeft,
+            isRunning: this.isRunning
+        };
+
+        window.electron.sendTimerUpdate(state);
     }
 }
 

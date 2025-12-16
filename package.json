@@ -1,0 +1,53 @@
+{
+  "name": "focus-timer",
+  "version": "1.0.0",
+  "description": "A premium, aesthetic Focus Timer application designed to boost productivity with a calm, immersive experience.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "build": "electron-builder --mac",
+    "build:all": "electron-builder -mwl",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KunmyonChoi/focus-time.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/KunmyonChoi/focus-time/issues"
+  },
+  "homepage": "https://github.com/KunmyonChoi/focus-time#readme",
+  "devDependencies": {
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.focustimer.app",
+    "productName": "Focus Timer",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.icns"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "script.js",
+      "index.html",
+      "style.css",
+      "node_modules/**/*"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    }
+  }
+}
