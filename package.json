@@ -49,5 +49,8 @@
       "buildResources": "build",
       "output": "dist"
     }
+  },
+  "dependencies": {
+    "auto-launch": "^5.0.6"
   }
 }

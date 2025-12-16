@@ -1,5 +1,12 @@
 const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } = require('electron');
 const path = require('path');
+const AutoLaunch = require('auto-launch');
+
+// Auto-launch configuration
+const autoLauncher = new AutoLaunch({
+    name: 'Focus Timer',
+    path: app.getPath('exe')
+});
 
 let tray = null;
 let mainWindow = null;
@@ -13,7 +20,8 @@ let appSettings = {
     theme: 'charcoal',
     sound: 'beep',
     autoStartRest: false,
-    autoStartFocus: false
+    autoStartFocus: false,
+    launchAtLogin: false
 };
 
 function createTray() {
@@ -307,6 +315,25 @@ function updateTrayMenu() {
         },
         { type: 'separator' },
         {
+            label: 'Launch at Login',
+            type: 'checkbox',
+            checked: appSettings.launchAtLogin,
+            click: async (menuItem) => {
+                appSettings.launchAtLogin = menuItem.checked;
+                try {
+                    if (menuItem.checked) {
+                        await autoLauncher.enable();
+                    } else {
+                        await autoLauncher.disable();
+                    }
+                } catch (err) {
+                    console.error('Failed to toggle launch at login:', err);
+                }
+                updateTrayMenu();
+            }
+        },
+        { type: 'separator' },
+        {
             label: 'Quit',
             accelerator: 'CmdOrCtrl+Q',
             click: () => {
@@ -430,7 +457,15 @@ ipcMain.on('request-exit-fullscreen', () => {
     }
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+    // Check current auto-launch status
+    try {
+        const isEnabled = await autoLauncher.isEnabled();
+        appSettings.launchAtLogin = isEnabled;
+    } catch (err) {
+        console.error('Failed to check auto-launch status:', err);
+    }
+
     createTray();
     createWindow();
 });
