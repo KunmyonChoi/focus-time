@@ -2,6 +2,8 @@
 
 A premium, aesthetic Focus Timer application designed to boost productivity with a calm, immersive experience.
 
+Available as both a **web application** and a **native macOS menubar app**.
+
 [![Netlify Status](https://api.netlify.com/api/v1/badges/f6b80e84-673b-4b99-aee3-52b439fa9d69/deploy-status)](https://app.netlify.com/projects/cosmic-lokum-2310eb/deploys)
 
 ## ✨ Features
@@ -42,6 +44,7 @@ Since this is a static web application (HTML, CSS, JS), you can publish it for *
 
 ## 🛠️ Development
 
+### Web Version
 No build steps required! Just open `index.html` in your browser.
 For the best experience, use a local server like Live Server in VS Code.
 
@@ -50,3 +53,26 @@ For the best experience, use a local server like Live Server in VS Code.
 python3 -m http.server
 # Open http://localhost:8000
 ```
+
+### macOS App (Electron)
+
+```bash
+# Install dependencies
+npm install
+
+# Run in development mode
+npm start
+
+# Build for macOS
+npm run build
+
+# The built app will be in the dist/ folder
+```
+
+**macOS App Features:**
+- Lives in your menubar with real-time timer display
+- Shows current mode (🎯 Focus / ☕ Rest) and timer state (▶ Running / ⏸ Paused)
+- Click menubar icon to show/hide timer window
+- Right-click for quick controls (Start/Pause, Reset, Quit)
+- Window automatically positions near menubar icon
+- All web features available in the app window
