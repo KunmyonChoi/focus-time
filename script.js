@@ -719,12 +719,28 @@ class FocusTimer {
                 this.playSound(this.soundPreference);
                 // Wait for sound to mostly finish.
                 // Beep ~0.1s, Alarm ~1.2s, Chime ~1.5s
-                // Using 1.5s as a safe 
+                // Using 1.5s as a safe
                 await new Promise(r => setTimeout(r, 1500));
             }
         }
 
         this.switchToMode(nextMode);
+
+        // Auto-window control for Electron
+        if (typeof window.electron !== 'undefined') {
+            // Auto-start Rest: Show window in fullscreen when transitioning to REST
+            if (nextMode === 'REST' && this.autoStartRest) {
+                window.electron.requestShowWindow();
+                // Small delay to ensure window is shown before requesting fullscreen
+                await new Promise(r => setTimeout(r, 200));
+                window.electron.requestFullscreen();
+            }
+            // Auto-start Focus: Hide window when transitioning to FOCUS
+            else if (nextMode === 'FOCUS' && this.autoStartFocus) {
+                window.electron.requestHideWindow();
+            }
+        }
+
         this.startTimer();
     }
 

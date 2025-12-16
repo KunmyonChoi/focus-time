@@ -44,5 +44,18 @@ contextBridge.exposeInMainWorld('electron', {
 
     onSetAutoStartFocus: (callback) => {
         ipcRenderer.on('set-auto-start-focus', callback);
+    },
+
+    // Request window actions from renderer
+    requestShowWindow: () => {
+        ipcRenderer.send('request-show-window');
+    },
+
+    requestHideWindow: () => {
+        ipcRenderer.send('request-hide-window');
+    },
+
+    requestFullscreen: () => {
+        ipcRenderer.send('request-fullscreen');
     }
 });

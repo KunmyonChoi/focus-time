@@ -25,8 +25,20 @@ function createTray() {
     tray.setToolTip('Focus Timer');
     updateTrayTitle();
 
-    // Remove click handler - let context menu handle everything
-    // tray.on('click', ...) removed
+    // Left-click: show context menu
+    // Right-click: toggle play/pause
+    tray.on('click', (event, bounds) => {
+        // On macOS, we can use pressedKeys to detect which button was clicked
+        // For simplicity, we'll show menu on left click
+        tray.popUpContextMenu();
+    });
+
+    tray.on('right-click', () => {
+        // Right-click toggles play/pause
+        if (mainWindow) {
+            mainWindow.webContents.send('toggle-timer');
+        }
+    });
 
     updateTrayMenu();
 }
@@ -369,6 +381,27 @@ ipcMain.on('settings-sync', (event, settings) => {
     appSettings.autoStartRest = settings.autoStartRest;
     appSettings.autoStartFocus = settings.autoStartFocus;
     updateTrayMenu();
+});
+
+// IPC handlers for window control from renderer
+ipcMain.on('request-show-window', () => {
+    if (mainWindow) {
+        showWindow();
+    }
+});
+
+ipcMain.on('request-hide-window', () => {
+    if (mainWindow) {
+        mainWindow.hide();
+    }
+});
+
+ipcMain.on('request-fullscreen', () => {
+    if (mainWindow) {
+        if (!mainWindow.isFullScreen()) {
+            mainWindow.setFullScreen(true);
+        }
+    }
 });
 
 app.whenReady().then(() => {
