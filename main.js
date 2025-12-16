@@ -35,8 +35,16 @@ function createTray() {
 
     tray.on('right-click', () => {
         // Right-click toggles play/pause
-        if (mainWindow) {
+        // Ensure window exists and is ready
+        if (mainWindow && mainWindow.webContents) {
             mainWindow.webContents.send('toggle-timer');
+        } else {
+            // Create window if it doesn't exist
+            createWindow();
+            // Wait for window to be ready, then toggle
+            mainWindow.once('ready-to-show', () => {
+                mainWindow.webContents.send('toggle-timer');
+            });
         }
     });
 
@@ -400,6 +408,14 @@ ipcMain.on('request-fullscreen', () => {
     if (mainWindow) {
         if (!mainWindow.isFullScreen()) {
             mainWindow.setFullScreen(true);
+        }
+    }
+});
+
+ipcMain.on('request-exit-fullscreen', () => {
+    if (mainWindow) {
+        if (mainWindow.isFullScreen()) {
+            mainWindow.setFullScreen(false);
         }
     }
 });

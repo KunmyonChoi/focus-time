@@ -737,6 +737,10 @@ class FocusTimer {
             }
             // Auto-start Focus: Hide window when transitioning to FOCUS
             else if (nextMode === 'FOCUS' && this.autoStartFocus) {
+                // Exit fullscreen first if in fullscreen mode to prevent black screen
+                window.electron.requestExitFullscreen();
+                // Wait for fullscreen exit animation to complete
+                await new Promise(r => setTimeout(r, 300));
                 window.electron.requestHideWindow();
             }
         }

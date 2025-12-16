@@ -57,5 +57,9 @@ contextBridge.exposeInMainWorld('electron', {
 
     requestFullscreen: () => {
         ipcRenderer.send('request-fullscreen');
+    },
+
+    requestExitFullscreen: () => {
+        ipcRenderer.send('request-exit-fullscreen');
     }
 });
