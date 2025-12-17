@@ -1,0 +1,12 @@
+{
+  "name": "focus-timer-web",
+  "version": "1.0.1",
+  "description": "Focus Timer - Web Version",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve ."
+  },
+  "devDependencies": {
+    "serve": "^14.0.0"
+  }
+}
