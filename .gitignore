@@ -22,5 +22,8 @@ yarn-error.log*
 *.swo
 *~
 
-# Package locks (optional, depending on your preference)
-package-lock.json
+# Env
+.env
+
+# Tests
+coverage/
