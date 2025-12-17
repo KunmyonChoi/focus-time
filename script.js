@@ -80,6 +80,20 @@ class FocusTimer {
         this.customDurationWrapper = document.getElementById('custom-duration-wrapper');
         this.radioButtons = document.getElementsByName('focus-duration');
 
+        // Task Manager Elements
+        this.taskManager = new TaskManager();
+        this.todoBtn = document.getElementById('todo-btn');
+        this.todoModal = document.getElementById('todo-modal');
+        this.closeTodoBtn = document.getElementById('close-todo-btn');
+        this.todoTotalTime = document.getElementById('todo-total-time');
+        this.newTaskInput = document.getElementById('new-task-input');
+        this.addTaskBtn = document.getElementById('add-task-btn');
+        this.taskList = document.getElementById('task-list');
+        this.emptyState = document.getElementById('empty-state');
+        this.currentTaskText = document.getElementById('current-task-text');
+        this.taskProgress = document.getElementById('task-progress');
+        this.currentTaskContainer = document.getElementById('current-task-container');
+
         this.init();
     }
 
@@ -107,7 +121,12 @@ class FocusTimer {
         }
 
         // Setup Electron IPC if running in Electron
+        // Setup Electron IPC if running in Electron
         this.setupElectronIPC();
+
+        // Setup Task Manager Listeners
+        this.setupTaskListeners();
+        this.updateActiveTaskDisplay();
     }
 
     setupEventListeners() {
@@ -270,6 +289,9 @@ class FocusTimer {
             this.theme = newTheme;
             this.applyTheme();
             this.applyBackgroundState();
+            if (this.theme === 'scenic') {
+                this.changeBackground();
+            }
         }
 
         // Save Auto-start settings
@@ -292,9 +314,211 @@ class FocusTimer {
             this.timeLeft = this.timers.FOCUS;
             this.updateDisplay();
             this.startPauseIcon.className = 'ph ph-play';
+            this.sendStateToElectron();
         }
 
         this.closeSettings();
+    }
+
+    /* --------------------------
+       Task Manager Logic 
+       -------------------------- */
+    setupTaskListeners() {
+        // Modal Toggles
+        this.todoBtn.addEventListener('click', () => {
+            this.todoModal.showModal();
+            this.renderTaskList();
+            this.newTaskInput.focus();
+        });
+
+        this.closeTodoBtn.addEventListener('click', () => this.todoModal.close());
+
+        this.todoModal.addEventListener('click', (e) => {
+            if (e.target === this.todoModal) this.todoModal.close();
+        });
+
+        // Add Task
+        const handleAddTask = () => {
+            const text = this.newTaskInput.value;
+            if (text.trim()) {
+                this.taskManager.addTask(text);
+                this.newTaskInput.value = '';
+                this.renderTaskList();
+                this.updateActiveTaskDisplay();
+            }
+        };
+
+        this.addTaskBtn.addEventListener('click', handleAddTask);
+        this.newTaskInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.isComposing) handleAddTask();
+        });
+
+        // Listen for external updates (e.g. from sync if we had it, or just consistency)
+        document.addEventListener('tasks-updated', () => {
+            this.renderTaskList();
+            this.updateActiveTaskDisplay();
+        });
+
+        this.setupDragAndDrop();
+    }
+
+    renderTaskList() {
+        if (!this.taskList) return;
+
+        const tasks = this.taskManager.getTasks();
+        this.taskList.innerHTML = '';
+
+        if (tasks.length === 0) {
+            this.emptyState.classList.remove('hidden');
+        } else {
+            this.emptyState.classList.add('hidden');
+
+            // Update Daily Total
+            const todayTotal = this.taskManager.getTodayTotalTime();
+            if (this.todoTotalTime) {
+                this.todoTotalTime.textContent = `Today: ${todayTotal}m`;
+            }
+
+            // Find first incomplete task to highlight
+            const activeTaskIndex = tasks.findIndex(t => !t.done);
+
+            tasks.forEach((task, index) => {
+                const li = document.createElement('li');
+                let className = `task-item ${task.done ? 'done' : ''}`;
+                if (index === activeTaskIndex) {
+                    className += ' active-task-highlight';
+                }
+                li.className = className;
+
+                li.draggable = true; // Make draggable
+                li.dataset.id = task.id;
+
+                // Drag Events
+                li.addEventListener('dragstart', (e) => {
+                    li.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                li.addEventListener('dragend', () => {
+                    li.classList.remove('dragging');
+                    // Get new index
+                    const newIndex = Array.from(this.taskList.children).indexOf(li);
+                    this.taskManager.moveTask(task.id, newIndex);
+                });
+
+                // Checkbox
+                const checkbox = document.createElement('div');
+                checkbox.className = 'task-checkbox';
+                checkbox.innerHTML = '<i class="ph ph-check"></i>';
+                checkbox.onclick = () => {
+                    const minutes = Math.floor(this.timers.FOCUS / 60);
+                    this.taskManager.toggleTask(task.id, minutes);
+                    // Animation handled by re-render
+                };
+
+                // Content Container
+                const contentDiv = document.createElement('div');
+                contentDiv.style.flex = '1';
+                contentDiv.style.display = 'flex';
+                contentDiv.style.alignItems = 'center';
+                contentDiv.style.justifyContent = 'space-between';
+
+                // Text
+                const span = document.createElement('span');
+                span.className = 'task-text';
+                span.textContent = task.text;
+                contentDiv.appendChild(span);
+
+                // Time Badge (if done and has time)
+                if (task.done && task.focusTime > 0) {
+                    const timeBadge = document.createElement('span');
+                    timeBadge.className = 'task-time-badge';
+                    timeBadge.textContent = `${task.focusTime}m`;
+                    contentDiv.appendChild(timeBadge);
+                }
+
+                // Delete Btn
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-task-btn';
+                delBtn.innerHTML = '<i class="ph ph-trash"></i>';
+                delBtn.onmousedown = (e) => e.stopPropagation(); // Prevent drag start on delete
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    this.taskManager.removeTask(task.id);
+                };
+
+                li.appendChild(checkbox);
+                li.appendChild(contentDiv);
+                li.appendChild(delBtn);
+                this.taskList.appendChild(li);
+            });
+        }
+    }
+
+    // Helper to init drag container listeners (call this in setupTaskListeners)
+    setupDragAndDrop() {
+        this.taskList.addEventListener('dragover', (e) => {
+            e.preventDefault(); // Enable dropping
+            const afterElement = this.getDragAfterElement(this.taskList, e.clientY);
+            const draggable = document.querySelector('.dragging');
+            if (!draggable) return;
+
+            if (afterElement == null) {
+                this.taskList.appendChild(draggable);
+            } else {
+                this.taskList.insertBefore(draggable, afterElement);
+            }
+        });
+    }
+
+    getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.task-item:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    updateActiveTaskDisplay() {
+        if (!this.currentTaskText) return;
+
+        // Progress
+        const { total, completed } = this.taskManager.getProgress();
+        this.taskProgress.textContent = `${completed} / ${total}`;
+
+        if (this.mode === 'FOCUS') {
+            const activeTask = this.taskManager.getActiveTask();
+            if (activeTask) {
+                this.currentTaskText.textContent = activeTask.text;
+                this.currentTaskContainer.style.opacity = '1';
+                this.currentTaskContainer.title = "Current Goal";
+                // Removed label update
+            } else {
+                this.currentTaskText.textContent = total > 0 ? "All tasks done!" : "No active tasks";
+
+                // If it's pure focus time but no tasks, maybe hide or show generic?
+                // Letting it show "No active tasks" is fine.
+            }
+        } else {
+            // REST MODE
+            // Show NEXT task?
+            const nextTask = this.taskManager.getActiveTask(); // Active task is the next one since we just finished one? 
+            // Or if we finished one, getActiveTask returns the new top one.
+
+            if (nextTask) {
+                this.currentTaskText.textContent = nextTask.text;
+                // Removed label update
+            } else {
+                this.currentTaskText.textContent = "Relax & Recharge";
+                // Removed label update
+            }
+        }
     }
 
     playSound(type) {
@@ -764,6 +988,31 @@ class FocusTimer {
             }
             this.switchToMode(nextMode);
         }
+
+        // Auto-complete task if finishing a FOCUS session
+        if (this.mode === 'FOCUS') { // We just finished FOCUS (mode is not switched yet? Wait, mode is switched IN switchToMode or playTransitionSequence)
+            // Careful: completeTimer calls playTransitionSequence OR switchToMode.
+            // If playTransitionSequence is called, it waits then switches.
+            // If switchToMode is called, it switches immediately.
+            // We want to complete the task associated with the session that JUST finished.
+            // So we should do it BEFORE switching mode.
+        }
+
+        // CORRECTION: Logic flow is completeTimer -> (maybe wait) -> switchToMode.
+        // We should mark the task as done NOW, before any transition starts.
+        // But completeTimer was called because timeLeft <= 0. The session "FOCUS" is done.
+
+        if (this.mode === 'FOCUS') {
+            // Complete current task
+            const minutes = Math.floor(this.timers.FOCUS / 60);
+            const completedTask = this.taskManager.completeCurrentTask(minutes);
+            if (completedTask) {
+                // Visualization or notification could go here
+                console.log('Completed task:', completedTask.text);
+                this.renderTaskList(); // Update list UI
+                this.updateActiveTaskDisplay();
+            }
+        }
     }
 
     async playTransitionSequence(nextMode) {
@@ -795,7 +1044,12 @@ class FocusTimer {
         const seconds = this.timeLeft % 60;
         const displayString = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         this.timeDisplay.textContent = displayString;
+        this.timeDisplay.textContent = displayString;
         document.title = `${displayString} - Focus Timer`;
+
+        // Update task display if needed (e.g. if we want to show remaining items count in title?)
+        // For now, just ensure the in-app display is current
+        this.updateActiveTaskDisplay();
 
         // Sync Media Session
         if (this.pipActive && 'mediaSession' in navigator && navigator.mediaSession.metadata) {

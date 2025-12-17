@@ -6,6 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="A premium Focus Timer application to boost your productivity.">
     <title>Focus Timer</title>
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' https://unpkg.com https://cdn.jsdelivr.net;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net;
+        font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net;
+        img-src 'self' https://images.unsplash.com data:;
+        connect-src 'self';
+    ">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,6 +44,9 @@
                 <button class="icon-btn electron-hide" id="fs-btn" aria-label="Toggle Fullscreen">
                     <i class="ph ph-corners-out"></i>
                 </button>
+                <button class="icon-btn" id="todo-btn" aria-label="Work List" title="Work List">
+                    <i class="ph ph-list-checks"></i>
+                </button>
                 <button class="icon-btn" id="settings-btn" aria-label="Settings">
                     <i class="ph ph-gear"></i>
                 </button>
@@ -43,6 +55,11 @@
 
         <div class="timer-display">
             <h1 id="time-display">25:00</h1>
+
+            <div id="current-task-container" class="fade-in">
+                <div id="current-task-text">No active task</div>
+                <div id="task-progress" title="Completed / Total">0 / 0</div>
+            </div>
         </div>
 
         <div class="controls">
@@ -61,6 +78,39 @@
         <div class="status-indicator" id="status-indicator"></div>
 
     </main>
+
+    <!-- Todo Modal -->
+    <dialog id="todo-modal" class="settings-modal todo-modal">
+        <div class="modal-content">
+            <header class="modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <h2>Work List</h2>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span id="todo-total-time"
+                        style="font-family: var(--timer-font); font-size: 0.9rem; color: var(--text-secondary); font-weight: 600; white-space: nowrap;">Today:
+                        0m</span>
+                    <button id="close-todo-btn" class="close-btn" aria-label="Close work list">
+                        <i class="ph ph-x"></i>
+                    </button>
+                </div>
+            </header>
+
+            <div class="todo-input-group">
+                <input type="text" id="new-task-input" placeholder="What's your focus today?">
+                <button id="add-task-btn" class="action-btn">
+                    <i class="ph ph-plus"></i>
+                </button>
+            </div>
+
+            <div class="task-list-container">
+                <ul id="task-list">
+                    <!-- Tasks will be injected here -->
+                </ul>
+                <div id="empty-state" class="empty-state hidden">
+                    <p>No tasks yet. Stay focused!</p>
+                </div>
+            </div>
+        </div>
+    </dialog>
 
     <!-- Settings Modal -->
     <dialog id="settings-modal" class="settings-modal">
@@ -204,6 +254,7 @@
         <p>Focus Timer</p>
     </footer>
 
+    <script src="task-manager.js"></script>
     <script src="script.js"></script>
 </body>
 

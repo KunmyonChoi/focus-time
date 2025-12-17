@@ -1,6 +1,6 @@
 {
   "name": "focus-timer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A premium, aesthetic Focus Timer application designed to boost productivity with a calm, immersive experience.",
   "main": "main.js",
   "scripts": {
@@ -41,6 +41,7 @@
       "main.js",
       "preload.js",
       "script.js",
+      "task-manager.js",
       "index.html",
       "style.css",
       "node_modules/**/*"

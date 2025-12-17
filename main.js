@@ -142,18 +142,18 @@ function updateTrayMenu() {
                         updateTrayMenu();
                     }
                 },
-                {
-                    label: '90 minutes',
+                // Dynamic Custom Option
+                ...((appSettings.focusDuration !== 25 && appSettings.focusDuration !== 50) ? [{
+                    label: `Custom (${appSettings.focusDuration} min)`,
                     type: 'radio',
-                    checked: appSettings.focusDuration === 90,
+                    checked: true,
                     click: () => {
-                        appSettings.focusDuration = 90;
+                        // Already selected, do nothing or re-apply
                         if (mainWindow) {
-                            mainWindow.webContents.send('set-focus-duration', 90);
+                            mainWindow.webContents.send('set-focus-duration', appSettings.focusDuration);
                         }
-                        updateTrayMenu();
                     }
-                }
+                }] : [])
             ]
         },
         {
@@ -387,8 +387,8 @@ function updateTrayTitle() {
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 400,
-        height: 500,
-        minWidth: 320,
+        height: 400,
+        minWidth: 400,
         minHeight: 400,
         show: false,
         webPreferences: {
